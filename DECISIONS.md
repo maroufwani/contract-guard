@@ -70,3 +70,9 @@ So the changelog still shows what kind of change it was, and the reason says it 
 
 **[6:15] Unknown change kinds are a warning, never a crash (AI suggestion, accepted)**
 If the diff ever produces something the rule table doesn't know, it should show up, not take down the publish.
+
+**[6:20] These changes hit every caller of an endpoint, not only matching fields (mine + AI)**
+New required request field or param, request body becoming required, optional to required, endpoint removed, endpoint deprecated, response code added or removed. partner-portal is hit by requestedBy in policy v4 even though it never sends it, which is exactly why.
+
+**[6:20] Stale references for unknown providers have since_version null (AI suggestion, accepted)**
+If the provider has nothing published yet, there's no version to blame.

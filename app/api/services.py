@@ -1,8 +1,8 @@
 """JSON API: register services, upload spec versions, read history."""
 from datetime import date
-from typing import NoReturn
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,9 +12,9 @@ from app.core.diff import diff_specs
 from app.core.errors import SpecError
 from app.core.impact import compute_impact
 from app.core.normalize import load_spec, normalize_spec, validate_spec
-from app.core.versions import compare_versions
 from app.db.models import ConsumerUsage, PublishAttempt, Service, SpecVersion
 from app.db.session import get_session
+from app.services.publish import override_attempt, publish_version
 
 router = APIRouter(prefix="/api")
 
@@ -29,7 +29,10 @@ def _get_service(db: Session, name: str) -> Service:
 def _latest_published(db: Session, service_id: int) -> SpecVersion | None:
     return db.scalar(
         select(SpecVersion)
-        .where(SpecVersion.service_id == service_id, SpecVersion.status == "published")
+        .where(
+            SpecVersion.service_id == service_id,
+            SpecVersion.status.in_(("published", "overridden")),
+        )
         .order_by(SpecVersion.id.desc())
     )
 
@@ -68,6 +71,9 @@ def _attempt_dict(attempt: PublishAttempt) -> dict:
         "compared_against": attempt.compared_against,
         "changes": attempt.changes,
         "affected_consumers": attempt.affected_consumers,
+        "unused_breaking": attempt.unused_breaking,
+        "reasons": attempt.reasons,
+        "approved_by": attempt.approved_by,
         "override_reason": attempt.override_reason,
         "error": attempt.error,
         "created_at": attempt.created_at.isoformat(),
@@ -82,29 +88,6 @@ def _version_dict(version: SpecVersion) -> dict:
         "status": version.status,
         "created_at": version.created_at.isoformat(),
     }
-
-
-def _reject(
-    db: Session,
-    service: Service,
-    version_label: str | None,
-    compared_against: str | None,
-    message: str,
-) -> NoReturn:
-    """Record a rejected attempt and answer 422 with the reason."""
-    db.add(
-        PublishAttempt(
-            service_id=service.id,
-            version_label=version_label or "",
-            outcome="rejected",
-            compared_against=compared_against,
-            changes=[],
-            affected_consumers=[],
-            error=message,
-        )
-    )
-    db.commit()
-    raise ApiError(422, message)
 
 
 @router.post("/services", status_code=201)
@@ -137,8 +120,9 @@ async def upload_version(
     name: str,
     request: Request,
     file: UploadFile | None = File(default=None),
+    today: date | None = Query(default=None),
     db: Session = Depends(get_session),
-) -> dict:
+) -> JSONResponse:
     """Upload a spec version as a multipart file or as a raw YAML/JSON body."""
     service = _get_service(db, name)
 
@@ -147,56 +131,11 @@ async def upload_version(
     else:
         text = (await request.body()).decode("utf-8", "replace")
 
-    try:
-        spec = load_spec(text)
-    except SpecError as exc:
-        _reject(db, service, None, None, str(exc))
-    try:
-        validate_spec(spec)
-    except SpecError as exc:
-        version = str((spec.get("info") or {}).get("version", "")) or None
-        _reject(db, service, version, None, str(exc))
-
-    version_label = str(spec["info"]["version"])
-    last_published = _latest_published(db, service.id)
-    if last_published is not None:
-        try:
-            ordering = compare_versions(version_label, last_published.version_label)
-        except SpecError as exc:
-            _reject(db, service, version_label, last_published.version_label, str(exc))
-        if ordering <= 0:
-            _reject(
-                db,
-                service,
-                version_label,
-                last_published.version_label,
-                f"Version {version_label} must be higher than the last published "
-                f"version {last_published.version_label}",
-            )
-
-    # The publish gate comes later; valid versions publish for now.
-    normalized = normalize_spec(spec)
-    db.add(
-        SpecVersion(
-            service_id=service.id,
-            version_label=version_label,
-            raw_spec=text,
-            normalized_spec=normalized,
-            status="published",
-        )
-    )
-    db.add(
-        PublishAttempt(
-            service_id=service.id,
-            version_label=version_label,
-            outcome="published",
-            compared_against=last_published.version_label if last_published else None,
-            changes=[],
-            affected_consumers=[],
-        )
-    )
-    db.commit()
-    return {"version": version_label, "endpoints": sorted(normalized["endpoints"])}
+    result = publish_version(db, service, text, today or date.today())
+    body = _attempt_dict(result.attempt)
+    if result.endpoints is not None:
+        body["endpoints"] = result.endpoints
+    return JSONResponse(status_code=result.status_code, content=body)
 
 
 @router.post("/services/{name}/impact")
@@ -335,3 +274,21 @@ def list_attempts(name: str, db: Session = Depends(get_session)) -> list[dict]:
         )
     )
     return [_attempt_dict(attempt) for attempt in attempts]
+
+
+@router.post("/services/{name}/attempts/{attempt_id}/override", status_code=201)
+def override_publish(
+    name: str,
+    attempt_id: int,
+    payload: dict,
+    db: Session = Depends(get_session),
+) -> dict:
+    service = _get_service(db, name)
+    result = override_attempt(
+        db,
+        service,
+        attempt_id,
+        str(payload.get("approved_by") or ""),
+        str(payload.get("reason") or ""),
+    )
+    return _attempt_dict(result.attempt)

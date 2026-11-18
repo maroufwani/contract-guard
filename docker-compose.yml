@@ -9,6 +9,7 @@ services:
       - ./data:/app/data
     environment:
       WEBHOOK_URL: http://webhook-receiver:9000
+      SEED_KIT: "1"
     depends_on:
       - webhook-receiver
 

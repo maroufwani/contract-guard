@@ -1,5 +1,7 @@
 """FastAPI application: health check and the service registry pages."""
+import os
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
@@ -11,7 +13,8 @@ from app.api.errors import ApiError, api_error_handler
 from app.api.consumers import router as consumers_router
 from app.api.services import router as services_router
 from app.db.models import Service
-from app.db.session import get_session, init_db
+from app.db.session import get_session, get_session_factory, init_db
+from scripts.seed import seed_kit
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "web" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -19,8 +22,12 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create the database tables on startup."""
+    """Create the database tables on startup, and seed the kit if asked."""
     init_db()
+    if os.environ.get("SEED_KIT") == "1":
+        with get_session_factory()() as db:
+            if db.scalar(select(Service).limit(1)) is None:
+                seed_kit(db, Path(__file__).resolve().parents[1] / "kit", date.today())
     yield
 
 

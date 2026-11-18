@@ -133,7 +133,7 @@ def _published_specs(db: Session, provider: str) -> list[tuple[str, dict]]:
         select(SpecVersion)
         .where(
             SpecVersion.service_id == service.id,
-            SpecVersion.status == "published",
+            SpecVersion.status.in_(("published", "overridden")),
             SpecVersion.normalized_spec.is_not(None),
         )
         .order_by(SpecVersion.id)
