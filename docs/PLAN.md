@@ -24,7 +24,6 @@ I sent questions 1 to 11 by email at 5:11 PM and got the reply at 5:41 PM. The P
 9. Should we enforce semver (breaking change must bump major)? PO: the version number only moves forward on a successful publish with 0 errors for dependents. So my reading is that a version number belongs to a service only once it is published, and a new upload must have a higher version than the last published one, otherwise it is rejected. A breaking change released as only a minor bump is still just a warning.
 10. Can a rejected version number be reused? PO: covered by the answer to Q9. Yes, because a rejected or blocked version never took the number.
 11. How do we treat consumer references that no longer match the spec? PO: it is an error against the previous deployed version. So I show it as an error (not a warning) on the consumer, and say which published version it stopped matching. It never crashes anything, and it does not block new publishes, because that damage is already live and blocking would freeze the provider team for something they can't undo.
-12. Which going-further item matters most, and who should be notified? Not asked, so my call. Webhook notifications to the provider team and the affected consumer teams.
 
 ## What I found in the kit
 
