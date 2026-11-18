@@ -249,7 +249,11 @@ def _collect_fields(
             schema_type = "array"
 
     if schema_type == "object" or isinstance(schema.get("properties"), dict):
-        # Objects are represented by their children only.
+        # A named object field gets its own entry so a required change on it is
+        # visible. An anonymous array item (base ends with "[]") does not: the
+        # array entry already carries it, and a top-level item base is "[]".
+        if base and not base.endswith("[]"):
+            _entry(fields, base, "object", required, schema)
         required_names = {
             str(name) for name in schema.get("required") or [] if isinstance(name, str)
         }

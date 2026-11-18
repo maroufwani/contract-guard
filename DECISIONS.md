@@ -49,3 +49,12 @@ The PO said a reference that no longer matches is "an error to the previous depl
 
 **[5:45] Question 12 was never sent, notifications are my call (mine)**
 I forgot to include it in the email. Going with webhooks to the provider team and the affected consumer teams, and a CI check endpoint after that if there is time.
+
+**[6:00] Tests run inside Docker, not on Windows (mine)**
+Windows Application Control on my laptop blocks the rpds-py DLL that openapi-spec-validator needs, for every version. So I run pytest in the app container. That is also Python 3.12, the same as what evaluators run.
+
+**[6:00] Path parameters have no name in the normalized spec (AI caught my mistake)**
+My Step 3 prompt put the parameter name inside path:0, which would make {id} and {quoteId} differ. opencode pointed it out and dropped the name. The display path still shows the spelling.
+
+**[6:00] Not comparing min/max/pattern constraints (mine)**
+Quote v4 has minimum/maximum on ncbPercent. The must-haves don't list constraints and time is short, so the diff ignores them. Listed as a limitation in the README.

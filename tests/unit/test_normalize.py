@@ -53,12 +53,16 @@ def test_quote_1_request_and_response_fields():
     request = normalized["endpoints"]["POST /quotes"]["request"]
     assert request["required"] is True
     assert set(request["fields"]) == {
+        "vehicle",
         "vehicle.make",
         "vehicle.model",
         "vehicle.cc",
+        "rider",
         "rider.age",
         "rider.city",
     }
+    assert request["fields"]["vehicle"]["type"] == "object"
+    assert request["fields"]["rider"]["type"] == "object"
     assert request["fields"]["vehicle.make"]["required"] is True
     assert request["fields"]["rider.city"]["required"] is False
 
@@ -67,12 +71,14 @@ def test_quote_1_request_and_response_fields():
         "quoteId",
         "status",
         "createdAt",
+        "premium",
         "premium.total",
         "premium.currency",
         "premium.breakdown",
         "premium.breakdown[].label",
         "premium.breakdown[].amount",
     }
+    assert response["premium"]["type"] == "object"
     assert response["status"]["enum"] == ["DRAFT", "FINAL"]
     assert response["premium.breakdown"]["type"] == "array"
     assert response["premium.breakdown[].amount"]["required"] is True
@@ -161,7 +167,8 @@ components:
     # The cycle is detected where the repeated $ref appears, so the second
     # level stops as a leaf of type "recursive".
     assert fields["child.child"]["type"] == "recursive"
-    assert set(fields) == {"name", "child.name", "child.child"}
+    assert fields["child"]["type"] == "object"
+    assert set(fields) == {"name", "child", "child.name", "child.child"}
 
 
 def test_load_spec_makes_yaml_values_json_safe():

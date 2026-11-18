@@ -1,11 +1,12 @@
 """JSON API: register services, upload spec versions, read history."""
 from typing import NoReturn
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.errors import ApiError
+from app.core.diff import diff_specs
 from app.core.errors import SpecError
 from app.core.normalize import load_spec, normalize_spec, validate_spec
 from app.core.versions import compare_versions
@@ -28,6 +29,20 @@ def _latest_published(db: Session, service_id: int) -> SpecVersion | None:
         .where(SpecVersion.service_id == service_id, SpecVersion.status == "published")
         .order_by(SpecVersion.id.desc())
     )
+
+
+def _get_version(db: Session, service: Service, label: str) -> SpecVersion:
+    version = db.scalar(
+        select(SpecVersion)
+        .where(
+            SpecVersion.service_id == service.id,
+            SpecVersion.version_label == label,
+        )
+        .order_by(SpecVersion.id.desc())
+    )
+    if version is None:
+        raise ApiError(404, f"Version '{label}' not found for service '{service.name}'")
+    return version
 
 
 def _service_dict(db: Session, service: Service) -> dict:
@@ -192,6 +207,21 @@ def list_versions(name: str, db: Session = Depends(get_session)) -> list[dict]:
         )
     )
     return [_version_dict(version) for version in versions]
+
+
+@router.get("/services/{name}/diff")
+def diff_versions(
+    name: str,
+    from_version: str = Query(alias="from"),
+    to_version: str = Query(alias="to"),
+    db: Session = Depends(get_session),
+) -> list[dict]:
+    service = _get_service(db, name)
+    old = _get_version(db, service, from_version)
+    new = _get_version(db, service, to_version)
+    if old.normalized_spec is None or new.normalized_spec is None:
+        raise ApiError(404, "One of the versions has no normalized spec")
+    return [change.to_dict() for change in diff_specs(old.normalized_spec, new.normalized_spec)]
 
 
 @router.get("/services/{name}/attempts")
