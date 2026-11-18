@@ -2,11 +2,12 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.errors import ApiError
+from app.core.changelog import build_changelog, to_markdown
 from app.core.classify import classify_all
 from app.core.diff import diff_specs
 from app.core.errors import SpecError
@@ -261,6 +262,44 @@ def diff_versions(
         for severity in ("breaking", "warning", "safe")
     }
     return {"changes": changes, "summary": summary}
+
+
+@router.get("/services/{name}/changelog")
+def changelog(
+    name: str,
+    from_version: str = Query(alias="from"),
+    to_version: str = Query(alias="to"),
+    format: str = Query(default="json"),
+    today: date | None = Query(default=None),
+    db: Session = Depends(get_session),
+):
+    """Changelog between any two stored versions, in the order asked for."""
+    if format not in {"json", "markdown"}:
+        raise ApiError(422, f"Unknown format '{format}'; use json or markdown")
+
+    service = _get_service(db, name)
+    old = _get_version(db, service, from_version)
+    new = _get_version(db, service, to_version)
+    if old.normalized_spec is None or new.normalized_spec is None:
+        raise ApiError(404, "One of the versions has no normalized spec")
+
+    classified = classify_all(
+        diff_specs(old.normalized_spec, new.normalized_spec),
+        today or date.today(),
+    )
+    changes = [
+        {
+            **change.to_dict(),
+            "severity": classification.severity,
+            "rule": classification.rule,
+            "reason": classification.reason,
+        }
+        for change, classification in classified
+    ]
+    result = build_changelog(changes, old.version_label, new.version_label)
+    if format == "markdown":
+        return PlainTextResponse(to_markdown(result), media_type="text/markdown")
+    return result
 
 
 @router.get("/services/{name}/attempts")

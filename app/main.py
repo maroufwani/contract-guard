@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.api.errors import ApiError, api_error_handler
 from app.api.consumers import router as consumers_router
+from app.api.metrics import router as metrics_router
 from app.api.services import router as services_router
 from app.db.models import Service
 from app.db.session import get_session, get_session_factory, init_db
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Contract Guard", lifespan=lifespan)
 app.include_router(services_router)
 app.include_router(consumers_router)
+app.include_router(metrics_router)
 app.add_exception_handler(ApiError, api_error_handler)
 
 

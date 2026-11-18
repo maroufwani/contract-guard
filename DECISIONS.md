@@ -76,3 +76,14 @@ New required request field or param, request body becoming required, optional to
 
 **[6:20] Stale references for unknown providers have since_version null (AI suggestion, accepted)**
 If the provider has nothing published yet, there's no version to blame.
+
+**[6:30] Overridden versions count as published everywhere (AI caught a gap)**
+The stale reference check from Step 6 only looked at status "published", so an overridden version was ignored. opencode fixed it in Step 7.
+
+**[6:30] An override record keeps the changes and impact it released (AI suggestion, accepted)**
+So the history shows exactly which breaking changes went out on purpose and who approved them.
+
+**[6:30] Kit is seeded on startup when the database is empty (mine)**
+Someone running docker compose up sees real data straight away. Consumers go in before specs, otherwise nothing would be blocked.
+
+**[6:35] Changelog order: endpoints by worst severity, then breaking, warning, safe inside each (AI suggestion, accepted)**
