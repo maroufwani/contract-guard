@@ -64,3 +64,9 @@ The Claim schema is used in both POST /claims 201 and GET /claims/{claimId} 200,
 
 **[6:05] Array items don't get their own object entry (AI suggestion, accepted)**
 The array entry (like premium.breakdown) already has the required flag, so a separate entry for its items would just duplicate it.
+
+**[6:15] x-internal keeps the rule id but drops to warning (AI suggestion, accepted)**
+So the changelog still shows what kind of change it was, and the reason says it is internal.
+
+**[6:15] Unknown change kinds are a warning, never a crash (AI suggestion, accepted)**
+If the diff ever produces something the rule table doesn't know, it should show up, not take down the publish.

@@ -10,9 +10,10 @@ from app.api.errors import ApiError
 from app.core.classify import classify_all
 from app.core.diff import diff_specs
 from app.core.errors import SpecError
+from app.core.impact import compute_impact
 from app.core.normalize import load_spec, normalize_spec, validate_spec
 from app.core.versions import compare_versions
-from app.db.models import PublishAttempt, Service, SpecVersion
+from app.db.models import ConsumerUsage, PublishAttempt, Service, SpecVersion
 from app.db.session import get_session
 
 router = APIRouter(prefix="/api")
@@ -196,6 +197,84 @@ async def upload_version(
     )
     db.commit()
     return {"version": version_label, "endpoints": sorted(normalized["endpoints"])}
+
+
+@router.post("/services/{name}/impact")
+async def spec_impact(
+    name: str,
+    request: Request,
+    file: UploadFile | None = File(default=None),
+    today: date | None = Query(default=None),
+    db: Session = Depends(get_session),
+) -> dict:
+    """Diff a proposed spec against the last published one; save nothing."""
+    service = _get_service(db, name)
+
+    if file is not None:
+        text = (await file.read()).decode("utf-8", "replace")
+    else:
+        text = (await request.body()).decode("utf-8", "replace")
+
+    try:
+        spec = load_spec(text)
+        validate_spec(spec)
+    except SpecError as exc:
+        raise ApiError(422, str(exc)) from exc
+
+    normalized = normalize_spec(spec)
+    version_label = str(normalized.get("version") or "")
+    last_published = _latest_published(db, service.id)
+
+    changes: list[dict] = []
+    summary = {"breaking": 0, "warning": 0, "safe": 0}
+    impact = {"affected_consumers": [], "unused_breaking": []}
+
+    if last_published is not None and last_published.normalized_spec is not None:
+        classified = classify_all(
+            diff_specs(last_published.normalized_spec, normalized),
+            today or date.today(),
+        )
+        changes = [
+            {
+                **change.to_dict(),
+                "severity": classification.severity,
+                "rule": classification.rule,
+                "reason": classification.reason,
+            }
+            for change, classification in classified
+        ]
+        summary = {
+            severity: sum(1 for item in changes if item["severity"] == severity)
+            for severity in ("breaking", "warning", "safe")
+        }
+
+        usages = list(db.scalars(select(ConsumerUsage).order_by(ConsumerUsage.id)))
+        impact = compute_impact(
+            classified,
+            [
+                {
+                    "consumer": usage.consumer.name,
+                    "team": usage.consumer.team,
+                    "provider": usage.provider,
+                    "method": usage.method,
+                    "path": usage.path,
+                    "sends": usage.sends or [],
+                    "reads": usage.reads or [],
+                }
+                for usage in usages
+            ],
+            service.name,
+        )
+
+    return {
+        "version": version_label,
+        "compared_against": (
+            last_published.version_label if last_published is not None else None
+        ),
+        "changes": changes,
+        "summary": summary,
+        **impact,
+    }
 
 
 @router.get("/services/{name}/versions")

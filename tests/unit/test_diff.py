@@ -1,4 +1,4 @@
-git add -A"""Unit tests for diff: the kit specs in publish order, plus small fixtures."""
+"""Unit tests for diff: the kit specs in publish order, plus small fixtures."""
 from pathlib import Path
 
 from app.core.diff import diff_specs
