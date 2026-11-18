@@ -132,6 +132,9 @@ async def upload_version(
     else:
         text = (await request.body()).decode("utf-8", "replace")
 
+    if not text.strip():
+        raise ApiError(422, "Choose a spec file or paste the YAML")
+
     result = publish_version(db, service, text, today or date.today())
     body = _attempt_dict(result.attempt)
     if result.endpoints is not None:

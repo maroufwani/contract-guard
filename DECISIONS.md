@@ -90,3 +90,6 @@ Someone running docker compose up sees real data straight away. Consumers go in 
 
 **[6:40] Consumer upload in the UI is YAML file only (AI choice, accepted)**
 Consumers come as kit-format YAML files anyway. The API still takes a raw body.
+
+**[7:10] Clearer upload errors (mine, found while testing by hand)**
+I uploaded a consumer file in the spec upload box by mistake and got "Unsupported OpenAPI version 'missing'", which tells a user nothing. Now it says the openapi field is missing, points consumer files to the Consumers page, and an empty upload records nothing.

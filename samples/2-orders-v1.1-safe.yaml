@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 1.1.0
+  description: 'Reorganised (Order renamed to OrderDetails, {orderId} renamed to {id}) plus two optional fields. Should publish.'
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetails'
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetails'
+        '404':
+          description: Not found
+components:
+  schemas:
+    OrderRequest:
+      type: object
+      required:
+      - customerId
+      - items
+      properties:
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+        note:
+          type: string
+        couponCode:
+          type: string
+    OrderDetails:
+      type: object
+      required:
+      - orderId
+      - status
+      - total
+      - items
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+          enum:
+          - NEW
+          - PAID
+        total:
+          type: number
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+    Line:
+      type: object
+      required:
+      - sku
+      - qty
+      properties:
+        sku:
+          type: string
+        qty:
+          type: integer

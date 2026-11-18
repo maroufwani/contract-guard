@@ -135,3 +135,56 @@ def test_upload_through_the_web_form(client):
     assert response.status_code == 200
     assert "published" in response.text
     assert "1.0.0" in page.text
+
+
+def test_empty_web_upload_saves_no_attempt(client):
+    _seed()
+    client.post(
+        "/services",
+        data={"name": "empty-api", "owner_team": "Empty team"},
+        follow_redirects=False,
+    )
+
+    response = client.post(
+        "/services/empty-api/upload",
+        data={"spec_text": "   \n"},
+    )
+    attempts = client.get("/api/services/empty-api/attempts").json()
+
+    assert response.status_code == 200
+    assert "Choose a spec file or paste the YAML" in response.text
+    assert attempts == []
+
+
+def test_empty_api_upload_returns_422_and_saves_no_attempt(client):
+    _seed()
+    client.post(
+        "/api/services",
+        json={"name": "empty-api", "owner_team": "Empty team"},
+    )
+
+    response = client.post(
+        "/api/services/empty-api/versions",
+        content=b"   ",
+        headers={"content-type": "text/plain"},
+    )
+    attempts = client.get("/api/services/empty-api/attempts").json()
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "Choose a spec file or paste the YAML"
+    assert attempts == []
+
+
+def test_empty_impact_form_shows_the_message_and_saves_no_attempt(client):
+    _seed()
+    before = client.get("/api/services/quote-api/attempts").json()
+
+    response = client.post(
+        "/services/quote-api/impact",
+        data={"spec_text": "  \n"},
+    )
+    attempts = client.get("/api/services/quote-api/attempts").json()
+
+    assert response.status_code == 200
+    assert "Choose a spec file or paste the YAML" in response.text
+    assert len(attempts) == len(before)

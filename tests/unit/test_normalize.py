@@ -207,3 +207,55 @@ paths:
     with pytest.raises(SpecError) as excinfo:
         validate_spec(load_spec(text))
     assert "not supported" in str(excinfo.value)
+
+
+def test_missing_openapi_field_has_a_clear_message():
+    text = """
+info: {title: T, version: 1.0.0}
+paths:
+  /x:
+    get:
+      responses:
+        '200':
+          description: ok
+"""
+    with pytest.raises(SpecError) as excinfo:
+        validate_spec(load_spec(text))
+    assert str(excinfo.value) == (
+        "This is not an OpenAPI spec: the 'openapi' field is missing."
+    )
+
+
+def test_unsupported_openapi_version_keeps_its_message():
+    text = """
+openapi: 3.1.0
+info: {title: T, version: 1.0.0}
+paths:
+  /x:
+    get:
+      responses:
+        '200':
+          description: ok
+"""
+    with pytest.raises(SpecError) as excinfo:
+        validate_spec(load_spec(text))
+    assert str(excinfo.value) == (
+        "Unsupported OpenAPI version '3.1.0': only 3.0.x is supported"
+    )
+
+
+def test_consumer_file_is_rejected_with_a_pointer_to_the_consumers_page():
+    text = """
+consumer: payments-svc
+team: Payments
+uses:
+  - provider: quote-api
+    method: GET
+    path: /quotes/{id}
+    reads: [quoteId]
+"""
+    with pytest.raises(SpecError) as excinfo:
+        validate_spec(load_spec(text))
+    assert str(excinfo.value) == (
+        "This looks like a consumer file. Upload it on the Consumers page."
+    )

@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 1.0.0
+  description: 'Sample service for manual testing. Owner: Testing team.'
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Not found
+components:
+  schemas:
+    OrderRequest:
+      type: object
+      required:
+      - customerId
+      - items
+      properties:
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+        note:
+          type: string
+    Order:
+      type: object
+      required:
+      - orderId
+      - status
+      - total
+      - items
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+          enum:
+          - NEW
+          - PAID
+        total:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+    Line:
+      type: object
+      required:
+      - sku
+      - qty
+      properties:
+        sku:
+          type: string
+        qty:
+          type: integer

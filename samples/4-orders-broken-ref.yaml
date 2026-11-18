@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 2.0.0
+  description: 'Invalid on purpose: the $ref points to OrderDetials, which does not exist. Should be rejected.'
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetials'
+components:
+  schemas:
+    OrderDetails:
+      type: object
+      properties:
+        orderId:
+          type: string

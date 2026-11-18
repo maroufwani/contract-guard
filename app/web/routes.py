@@ -126,6 +126,9 @@ def _classify_changes(old: SpecVersion, new: SpecVersion) -> list[dict]:
     ]
 
 
+EMPTY_SPEC_MESSAGE = "Choose a spec file or paste the YAML"
+
+
 async def _form_text(request: Request) -> str:
     """Pasted YAML from the textarea, or the contents of the chosen file."""
     form = await request.form()
@@ -133,6 +136,16 @@ async def _form_text(request: Request) -> str:
     if upload is not None and getattr(upload, "filename", ""):
         return (await upload.read()).decode("utf-8", "replace")
     return str(form.get("spec_text") or "")
+
+
+def _empty_spec_error(
+    request: Request, service: Service
+) -> HTMLResponse:
+    return _render(
+        request,
+        "partials/impact_result.html",
+        {"service": service, "error": EMPTY_SPEC_MESSAGE, "result": None},
+    )
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -201,7 +214,10 @@ async def upload_page(
     name: str, request: Request, db: Session = Depends(get_session)
 ):
     service = _get_service(db, name)
-    result = publish_version(db, service, await _form_text(request), date.today())
+    text = await _form_text(request)
+    if not text.strip():
+        return _empty_spec_error(request, service)
+    result = publish_version(db, service, text, date.today())
     return _render(
         request,
         "partials/upload_result.html",
@@ -219,9 +235,12 @@ async def impact_page(
     name: str, request: Request, db: Session = Depends(get_session)
 ):
     service = _get_service(db, name)
+    text = await _form_text(request)
+    if not text.strip():
+        return _empty_spec_error(request, service)
 
     try:
-        spec = load_spec(await _form_text(request))
+        spec = load_spec(text)
         validate_spec(spec)
     except SpecError as exc:
         return _render(

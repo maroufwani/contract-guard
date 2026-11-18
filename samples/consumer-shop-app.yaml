@@ -1,0 +1,24 @@
+consumer: shop-app
+team: Shop
+uses:
+- provider: orders-api
+  method: POST
+  path: /orders
+  sends:
+  - customerId
+  - items[].sku
+  - items[].qty
+  reads:
+  - orderId
+  - status
+  - total
+- provider: orders-api
+  method: GET
+  path: /orders/{orderId}
+  sends:
+  - orderId
+  reads:
+  - orderId
+  - status
+  - items[].sku
+  - items[].qty

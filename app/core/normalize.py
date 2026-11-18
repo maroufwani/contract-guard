@@ -120,10 +120,18 @@ def _validate_with_openapi_validator(spec: dict) -> None:
 
 def validate_spec(spec: dict) -> None:
     """Raise SpecError unless spec is a valid OpenAPI 3.0.x document."""
-    version = str(spec.get("openapi", ""))
+    if "consumer" in spec and "uses" in spec:
+        raise SpecError(
+            "This looks like a consumer file. Upload it on the Consumers page."
+        )
+    version = str(spec.get("openapi") or "").strip()
+    if not version:
+        raise SpecError(
+            "This is not an OpenAPI spec: the 'openapi' field is missing."
+        )
     if not version.startswith("3.0."):
         raise SpecError(
-            f"Unsupported OpenAPI version '{version or 'missing'}': only 3.0.x is supported"
+            f"Unsupported OpenAPI version '{version}': only 3.0.x is supported"
         )
     if not str((spec.get("info") or {}).get("version", "")):
         raise SpecError("info.version is missing")

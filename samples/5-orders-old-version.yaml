@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 0.9.0
+  description: 'Valid spec but an older version number than the live one. Should be rejected.'
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId:
+                    type: string
