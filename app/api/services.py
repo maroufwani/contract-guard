@@ -1,4 +1,5 @@
 """JSON API: register services, upload spec versions, read history."""
+from datetime import date
 from typing import NoReturn
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
@@ -6,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.errors import ApiError
+from app.core.classify import classify_all
 from app.core.diff import diff_specs
 from app.core.errors import SpecError
 from app.core.normalize import load_spec, normalize_spec, validate_spec
@@ -214,14 +216,33 @@ def diff_versions(
     name: str,
     from_version: str = Query(alias="from"),
     to_version: str = Query(alias="to"),
+    today: date | None = Query(default=None),
     db: Session = Depends(get_session),
-) -> list[dict]:
+) -> dict:
     service = _get_service(db, name)
     old = _get_version(db, service, from_version)
     new = _get_version(db, service, to_version)
     if old.normalized_spec is None or new.normalized_spec is None:
         raise ApiError(404, "One of the versions has no normalized spec")
-    return [change.to_dict() for change in diff_specs(old.normalized_spec, new.normalized_spec)]
+
+    classified = classify_all(
+        diff_specs(old.normalized_spec, new.normalized_spec),
+        today or date.today(),
+    )
+    changes = [
+        {
+            **change.to_dict(),
+            "severity": classification.severity,
+            "rule": classification.rule,
+            "reason": classification.reason,
+        }
+        for change, classification in classified
+    ]
+    summary = {
+        severity: sum(1 for item in changes if item["severity"] == severity)
+        for severity in ("breaking", "warning", "safe")
+    }
+    return {"changes": changes, "summary": summary}
 
 
 @router.get("/services/{name}/attempts")

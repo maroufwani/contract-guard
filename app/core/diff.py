@@ -298,7 +298,7 @@ def _compare_endpoint(
                 old=None,
                 new=True,
                 internal=internal,
-                info={},
+                info={"new_required": new_request.get("required") is True},
             )
         )
     elif old_request is not None and new_request is None:

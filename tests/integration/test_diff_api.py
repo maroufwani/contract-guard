@@ -31,7 +31,8 @@ def test_diff_returns_changes_between_two_versions(client):
         params={"from": labels[0], "to": labels[1]},
     )
     assert response.status_code == 200
-    changes = response.json()
+    body = response.json()
+    changes = body["changes"]
     assert {
         (change["endpoint"], change["field"], change["kind"]) for change in changes
     } == {
@@ -43,6 +44,8 @@ def test_diff_returns_changes_between_two_versions(client):
         ("POST /quotes", "premium.breakdown[].value", "field_added"),
         ("POST /quotes", "status", "enum_values_added"),
     }
+    assert all(change["severity"] and change["rule"] and change["reason"] for change in changes)
+    assert body["summary"] == {"breaking": 2, "warning": 3, "safe": 2}
 
 
 def test_diff_unknown_version_is_404(client):

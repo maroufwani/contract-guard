@@ -58,3 +58,9 @@ My Step 3 prompt put the parameter name inside path:0, which would make {id} and
 
 **[6:00] Not comparing min/max/pattern constraints (mine)**
 Quote v4 has minimum/maximum on ncbPercent. The must-haves don't list constraints and time is short, so the diff ignores them. Listed as a limitation in the README.
+
+**[6:05] My expected diff for claims was incomplete (mine, AI was right)**
+The Claim schema is used in both POST /claims 201 and GET /claims/{claimId} 200, so amountApproved and assessorNotes change in both places. opencode stopped and showed me the real output instead of changing my expected values. I fixed the tests.
+
+**[6:05] Array items don't get their own object entry (AI suggestion, accepted)**
+The array entry (like premium.breakdown) already has the required flag, so a separate entry for its items would just duplicate it.
