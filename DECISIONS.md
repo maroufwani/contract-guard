@@ -87,3 +87,6 @@ So the history shows exactly which breaking changes went out on purpose and who 
 Someone running docker compose up sees real data straight away. Consumers go in before specs, otherwise nothing would be blocked.
 
 **[6:35] Changelog order: endpoints by worst severity, then breaking, warning, safe inside each (AI suggestion, accepted)**
+
+**[6:40] Consumer upload in the UI is YAML file only (AI choice, accepted)**
+Consumers come as kit-format YAML files anyway. The API still takes a raw body.
