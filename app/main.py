@@ -7,6 +7,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.errors import ApiError, api_error_handler
+from app.api.services import router as services_router
 from app.db.models import Service
 from app.db.session import get_session, init_db
 
@@ -22,6 +24,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Contract Guard", lifespan=lifespan)
+app.include_router(services_router)
+app.add_exception_handler(ApiError, api_error_handler)
 
 
 @app.get("/health")

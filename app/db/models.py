@@ -51,9 +51,10 @@ class SpecVersion(Base):
 class PublishAttempt(Base):
     """One attempt to publish a spec version and what came out of the diff.
 
-    outcome is one of: published, blocked, rejected, overridden.
-    compared_against is the version label this spec was diffed with (None for
-    the first version of a service). changes is a JSON list of entries like
+    outcome is one of: published, blocked, rejected, overridden. rejected
+    attempts carry the reason in error. compared_against is the version
+    label this spec was diffed with (None for the first version of a
+    service). changes is a JSON list of entries like
     {path, change, severity, reason}.
     """
 
@@ -67,6 +68,7 @@ class PublishAttempt(Base):
     changes: Mapped[list[Any]] = mapped_column(JSON, default=list)
     affected_consumers: Mapped[list[Any]] = mapped_column(JSON, default=list)
     override_reason: Mapped[str | None] = mapped_column(Text, default=None)
+    error: Mapped[str | None] = mapped_column(Text, default=None)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     service: Mapped["Service"] = relationship(back_populates="publish_attempts")
