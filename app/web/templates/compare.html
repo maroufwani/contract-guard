@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Compare {{ changelog.from }} → {{ changelog.to }} · {{ service.name }}{% endblock %}
+{% block content %}
+<h1>{{ service.name }}: {{ changelog.from }} → {{ changelog.to }}</h1>
+<p class="muted"><a href="/services/{{ service.name }}">Back to {{ service.name }}</a></p>
+
+{% if changelog.message %}
+    <p class="muted">{{ changelog.message }}</p>
+{% else %}
+    <p>
+        <span class="badge breaking">{{ changelog.summary.breaking }} breaking</span>
+        <span class="badge warning">{{ changelog.summary.warning }} warnings</span>
+        <span class="badge safe">{{ changelog.summary.safe }} safe</span>
+    </p>
+
+    {% for group in changelog.groups %}
+        <section class="panel">
+            <h3>{{ group.endpoint }}</h3>
+            <ul class="plain">
+            {% for change in group.changes %}
+                <li><span class="badge {{ change.severity }}">{{ change.severity }}</span> {{ change.reason }}</li>
+            {% endfor %}
+            </ul>
+        </section>
+    {% endfor %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Attempt {{ attempt.id }} · {{ service.name }}{% endblock %}
+{% block content %}
+<h1>{{ service.name }} attempt {{ attempt.id }}</h1>
+<p class="muted"><a href="/services/{{ service.name }}">Back to {{ service.name }}</a></p>
+
+<p>
+    <span class="badge {{ attempt.outcome }}">{{ attempt.outcome }}</span>
+    <strong>{{ attempt.version_label }}</strong>
+    {% if attempt.compared_against %}compared with {{ attempt.compared_against }}{% else %}first version{% endif %}
+    · <span class="muted">{{ attempt.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+</p>
+<p class="muted">
+    {{ counts.breaking }} breaking · {{ counts.warning }} warnings · {{ counts.safe }} safe
+</p>
+
+{% if attempt.error %}
+    <p class="error">{{ attempt.error }}</p>
+{% endif %}
+
+{% if attempt.reasons %}
+    <div class="panel">
+        <h3>Why</h3>
+        <ul class="plain">
+        {% for reason in attempt.reasons %}<li>{{ reason }}</li>{% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<h2>Affected consumers</h2>
+{% if attempt.affected_consumers %}
+    {% for group in attempt.affected_consumers %}
+        <section class="panel">
+            <h3>{{ group.consumer }} <span class="muted">{{ group.team }}</span></h3>
+            <ul class="plain">
+            {% for item in group.affected %}
+                <li><span class="badge {{ item.severity }}">{{ item.severity }}</span> {{ item.reason }}</li>
+            {% endfor %}
+            </ul>
+        </section>
+    {% endfor %}
+{% else %}
+    <p class="muted">No consumer is affected.</p>
+{% endif %}
+
+<h2>Breaking changes with no consumer</h2>
+{% if attempt.unused_breaking %}
+    <ul class="plain">
+    {% for change in attempt.unused_breaking %}
+        <li><span class="badge breaking">breaking</span> {{ change.reason }}</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p class="muted">None.</p>
+{% endif %}
+
+<h2>Warnings</h2>
+{% if warnings %}
+    <ul class="plain">
+    {% for change in warnings %}
+        <li><span class="badge warning">warning</span> {{ change.reason }}</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p class="muted">None.</p>
+{% endif %}
+
+<h2>Override</h2>
+{% if override %}
+    <div class="panel">
+        <p>
+            <span class="badge overridden">overridden</span>
+            by <strong>{{ override.approved_by }}</strong>
+            · <span class="muted">{{ override.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+        </p>
+        <p>{{ override.override_reason }}</p>
+    </div>
+{% elif attempt.approved_by %}
+    <div class="panel">
+        <p>
+            <span class="badge overridden">overridden</span>
+            by <strong>{{ attempt.approved_by }}</strong>
+        </p>
+        <p>{{ attempt.override_reason }}</p>
+    </div>
+{% else %}
+    <p class="muted">No override for this attempt.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}{{ service.name }} · Contract Guard{% endblock %}
+{% block content %}
+<h1>{{ service.name }}</h1>
+<p class="muted">Owner: {{ service.owner_team }}{% if service.contact %} · {{ service.contact }}{% endif %}</p>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<h2>Versions</h2>
+{% if versions %}
+<div class="table-wrap">
+    <table>
+        <thead>
+        <tr><th>Version</th><th>Status</th><th>Stored</th></tr>
+        </thead>
+        <tbody>
+        {% for version in versions %}
+            <tr>
+                <td>{{ version.version_label }}</td>
+                <td><span class="badge {{ version.status }}">{{ version.status }}</span></td>
+                <td class="muted">{{ version.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <p class="muted">No versions yet.</p>
+{% endif %}
+
+<h2>Publish history</h2>
+{% if history %}
+<div class="table-wrap">
+    <table>
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Version</th>
+            <th>Outcome</th>
+            <th>Compared against</th>
+            <th>Changes</th>
+            <th>Result</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in history %}
+            {% set attempt = row.attempt %}
+            <tr>
+                <td class="muted">{{ attempt.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>{{ attempt.version_label }}</td>
+                <td><span class="badge {{ attempt.outcome }}">{{ attempt.outcome }}</span></td>
+                <td>{{ attempt.compared_against or "—" }}</td>
+                <td>
+                    {% if row.counts.breaking %}<span class="badge breaking">{{ row.counts.breaking }} breaking</span>{% endif %}
+                    {% if row.counts.warning %}<span class="badge warning">{{ row.counts.warning }} warning</span>{% endif %}
+                    {% if row.counts.safe %}<span class="badge safe">{{ row.counts.safe }} safe</span>{% endif %}
+                    {% if not attempt.changes %}<span class="muted">none</span>{% endif %}
+                </td>
+                <td>
+                    {% if attempt.error %}
+                        <span class="badge error">error</span> {{ attempt.error }}
+                    {% else %}
+                        <ul class="plain">
+                        {% for reason in attempt.reasons %}<li>{{ reason }}</li>{% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if attempt.approved_by %}
+                        <div class="sep">
+                            <strong>Override by {{ attempt.approved_by }}:</strong>
+                            {{ attempt.override_reason }}
+                        </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/services/{{ service.name }}/attempts/{{ attempt.id }}">Details</a>
+                    {% if attempt.outcome == "blocked" and attempt.version_label not in overridden %}
+                        <details>
+                            <summary>Override</summary>
+                            <form method="post" action="/services/{{ service.name }}/attempts/{{ attempt.id }}/override">
+                                <div class="stack">
+                                    <input name="approved_by" placeholder="{{ service.owner_team }}" required>
+                                    <input name="reason" placeholder="Why is this safe?" required>
+                                    <button type="submit">Override</button>
+                                </div>
+                            </form>
+                        </details>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <p class="muted">Nothing has been uploaded yet.</p>
+{% endif %}
+
+<h2>Publish a version</h2>
+<div class="panel">
+    <form hx-post="/services/{{ service.name }}/upload"
+          hx-target="#upload-result"
+          hx-swap="innerHTML"
+          hx-encoding="multipart/form-data"
+          enctype="multipart/form-data">
+        <div class="stack">
+            <label>Spec file <input type="file" name="file" accept=".yaml,.yml,.json"></label>
+            <label>or paste the YAML
+                <textarea name="spec_text" rows="10" placeholder="openapi: 3.0.3 ..."></textarea>
+            </label>
+            <div><button type="submit">Publish</button></div>
+        </div>
+    </form>
+    <div id="upload-result"></div>
+</div>
+
+<h2>Check impact without publishing</h2>
+<div class="panel">
+    <form hx-post="/services/{{ service.name }}/impact"
+          hx-target="#impact-result"
+          hx-swap="innerHTML"
+          hx-encoding="multipart/form-data"
+          enctype="multipart/form-data">
+        <div class="stack">
+            <label>Spec file <input type="file" name="file" accept=".yaml,.yml,.json"></label>
+            <label>or paste the YAML
+                <textarea name="spec_text" rows="10" placeholder="openapi: 3.0.3 ..."></textarea>
+            </label>
+            <div><button type="submit" class="secondary">Check impact</button></div>
+        </div>
+    </form>
+    <div id="impact-result"></div>
+</div>
+
+<h2>Compare two versions</h2>
+<div class="panel">
+    <form class="inline" method="get" action="/services/{{ service.name }}/compare">
+        <label>From
+            <select name="from">
+            {% for version in versions %}
+                <option value="{{ version.version_label }}">{{ version.version_label }} ({{ version.status }})</option>
+            {% endfor %}
+            </select>
+        </label>
+        <label>To
+            <select name="to">
+            {% for version in versions %}
+                <option value="{{ version.version_label }}">{{ version.version_label }} ({{ version.status }})</option>
+            {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="secondary">Compare</button>
+    </form>
+</div>
+{% endblock %}

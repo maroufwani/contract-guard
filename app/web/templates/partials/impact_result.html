@@ -1,0 +1,54 @@
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+{% if result %}
+<div class="panel">
+    <h3>
+        Impact for {{ result.version }}
+        {% if result.compared_against %}against {{ result.compared_against }}{% else %}(first version){% endif %}
+    </h3>
+    <p class="muted">
+        {{ result.summary.breaking }} breaking · {{ result.summary.warning }} warnings · {{ result.summary.safe }} safe
+    </p>
+
+    {% if result.affected_consumers %}
+        <p><strong>Affected consumers</strong></p>
+        {% for group in result.affected_consumers %}
+            <div class="sep">
+                <strong>{{ group.consumer }}</strong>
+                <span class="muted">{{ group.team }}</span>
+                <ul class="plain">
+                {% for item in group.affected %}
+                    <li><span class="badge {{ item.severity }}">{{ item.severity }}</span> {{ item.reason }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">No consumer is affected by these changes.</p>
+    {% endif %}
+
+    {% if result.unused_breaking %}
+        <p><strong>Breaking changes with no consumer</strong></p>
+        <ul class="plain">
+        {% for change in result.unused_breaking %}
+            <li><span class="badge breaking">breaking</span> {{ change.reason }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if result.changes %}
+        <details>
+            <summary>All {{ result.changes|length }} changes</summary>
+            <ul class="plain">
+            {% for change in result.changes %}
+                <li><span class="badge {{ change.severity }}">{{ change.severity }}</span> {{ change.reason }}</li>
+            {% endfor %}
+            </ul>
+        </details>
+    {% else %}
+        <p class="muted">No contract changes.</p>
+    {% endif %}
+</div>
+{% endif %}

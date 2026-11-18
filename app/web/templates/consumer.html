@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ detail.name }} · Contract Guard{% endblock %}
+{% block content %}
+<h1>{{ detail.name }}</h1>
+<p class="muted">Team: {{ detail.team }}</p>
+<p class="muted"><a href="/consumers">Back to consumers</a></p>
+
+<h2>Usages</h2>
+{% if detail.usages %}
+<div class="table-wrap">
+    <table>
+        <thead>
+        <tr><th>Provider</th><th>Method</th><th>Path</th><th>Sends</th><th>Reads</th></tr>
+        </thead>
+        <tbody>
+        {% for usage in detail.usages %}
+            <tr>
+                <td>{{ usage.provider }}</td>
+                <td>{{ usage.method }}</td>
+                <td>{{ usage.path }}</td>
+                <td>{{ usage.sends | join(", ") or "—" }}</td>
+                <td>{{ usage.reads | join(", ") or "—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <p class="muted">No usages recorded.</p>
+{% endif %}
+
+<h2>Stale references</h2>
+{% if detail.stale_references %}
+<div class="table-wrap">
+    <table>
+        <thead>
+        <tr><th>Provider</th><th>Endpoint</th><th>Field</th><th>Via</th><th>Stopped matching</th></tr>
+        </thead>
+        <tbody>
+        {% for stale in detail.stale_references %}
+            <tr>
+                <td>{{ stale.provider }}</td>
+                <td>{{ stale.endpoint }}</td>
+                <td><span class="badge error">error</span> {{ stale.field or "—" }}</td>
+                <td>{{ stale.via }}</td>
+                <td>{{ stale.since_version or "—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <p class="muted">Every reference still matches the published spec.</p>
+{% endif %}
+{% endblock %}

@@ -2,22 +2,50 @@
 {% block title %}Services · Contract Guard{% endblock %}
 {% block content %}
 <h1>Services</h1>
-{% if services %}
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+{% if rows %}
+<div class="table-wrap">
     <table>
         <thead>
-        <tr><th>Name</th><th>Owner team</th><th>Contact</th></tr>
+        <tr>
+            <th>Service</th>
+            <th>Owner team</th>
+            <th>Latest published</th>
+            <th>Last attempt</th>
+        </tr>
         </thead>
         <tbody>
-        {% for service in services %}
+        {% for row in rows %}
             <tr>
-                <td>{{ service.name }}</td>
-                <td>{{ service.owner_team }}</td>
-                <td>{{ service.contact or "—" }}</td>
+                <td><a href="/services/{{ row.service.name }}">{{ row.service.name }}</a></td>
+                <td>{{ row.service.owner_team }}</td>
+                <td>{{ row.latest.version_label if row.latest else "—" }}</td>
+                <td>
+                    {% if row.last_attempt %}
+                        <span class="badge {{ row.last_attempt.outcome }}">{{ row.last_attempt.outcome }}</span>
+                        <span class="muted">{{ row.last_attempt.version_label }}</span>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
+</div>
 {% else %}
     <p class="muted">No services registered yet.</p>
 {% endif %}
+
+<div class="panel">
+    <h3>Register a service</h3>
+    <form class="inline" method="post" action="/services">
+        <label>Name <input name="name" required></label>
+        <label>Owner team <input name="owner_team" required></label>
+        <label>Contact <input name="contact"></label>
+        <button type="submit">Register</button>
+    </form>
+</div>
 {% endblock %}

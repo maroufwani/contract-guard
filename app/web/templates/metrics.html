@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Metrics · Contract Guard{% endblock %}
+{% block content %}
+<h1>Metrics</h1>
+
+<div class="cards">
+    <div class="card">
+        <div class="value">{{ metrics.total_attempts }}</div>
+        <p>Total attempts: every upload that reached the gate, including rejected and overridden ones.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ "%.1f"|format(metrics.block_rate * 100) }}%</div>
+        <p>Block rate: blocked attempts divided by all attempts.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.outcomes.published }}</div>
+        <p>Published: uploads that passed the gate and became a version.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.outcomes.blocked }}</div>
+        <p>Blocked: uploads stopped because a consumer would break.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.outcomes.rejected }}</div>
+        <p>Rejected: uploads refused before the diff, such as invalid specs or a version already taken.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.overrides }}</div>
+        <p>Overrides: blocked attempts that an owning team later allowed through.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.breaking_caught }}</div>
+        <p>Breaking changes caught: breaking changes that hit a consumer in a blocked attempt.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.consumers_protected }}</div>
+        <p>Consumers protected: distinct consumers hit by a breaking change in a blocked attempt.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.breaking_with_no_consumer }}</div>
+        <p>Breaking changes with no consumer: those that only warned because nobody uses them.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.overridden_breaking }}</div>
+        <p>Breaking changes that shipped through an override.</p>
+    </div>
+    <div class="card">
+        <div class="value">{{ metrics.stale_references }}</div>
+        <p>Stale references: consumer fields or endpoints that no longer match the published spec.</p>
+    </div>
+</div>
+{% endblock %}

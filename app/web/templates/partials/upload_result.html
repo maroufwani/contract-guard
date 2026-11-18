@@ -1,0 +1,40 @@
+{% if attempt %}
+<div class="panel">
+    <h3>
+        <span class="badge {{ attempt.outcome }}">{{ attempt.outcome }}</span>
+        {{ attempt.version_label }}
+    </h3>
+    <p class="muted">
+        {% if attempt.compared_against %}Compared with {{ attempt.compared_against }}{% else %}First version, nothing to compare against{% endif %}
+        · {{ counts.breaking }} breaking · {{ counts.warning }} warnings · {{ counts.safe }} safe
+    </p>
+
+    {% if attempt.error %}
+        <p class="error">{{ attempt.error }}</p>
+    {% elif attempt.reasons %}
+        <ul class="plain">
+        {% for reason in attempt.reasons %}<li>{{ reason }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if attempt.affected_consumers %}
+        <p><strong>Affected consumers</strong></p>
+        <ul class="plain">
+        {% for group in attempt.affected_consumers %}
+            <li>{{ group.consumer }} <span class="muted">{{ group.team }}</span></li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if attempt.unused_breaking %}
+        <p><strong>Breaking changes with no consumer</strong></p>
+        <ul class="plain">
+        {% for change in attempt.unused_breaking %}
+            <li><span class="badge breaking">breaking</span> {{ change.reason }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p class="muted">Reload the page to see this attempt in the history.</p>
+</div>
+{% endif %}
