@@ -1,0 +1,19 @@
+# Contract Guard: the app on port 8000 plus the kit's webhook receiver.
+# Start:  docker compose up --build
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      WEBHOOK_URL: http://webhook-receiver:9000
+    depends_on:
+      - webhook-receiver
+
+  webhook-receiver:
+    build: ./kit/webhook-receiver
+    environment: { PORT: "9000" }
+    ports:
+      - "${WEBHOOK_PORT:-9900}:9000"

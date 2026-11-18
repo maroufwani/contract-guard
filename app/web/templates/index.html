@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Services · Contract Guard{% endblock %}
+{% block content %}
+<h1>Services</h1>
+{% if services %}
+    <table>
+        <thead>
+        <tr><th>Name</th><th>Owner team</th><th>Contact</th></tr>
+        </thead>
+        <tbody>
+        {% for service in services %}
+            <tr>
+                <td>{{ service.name }}</td>
+                <td>{{ service.owner_team }}</td>
+                <td>{{ service.contact or "—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="muted">No services registered yet.</p>
+{% endif %}
+{% endblock %}

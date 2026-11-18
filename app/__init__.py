@@ -1,0 +1,1 @@
+"""Contract Guard application package."""
