@@ -33,3 +33,19 @@ opencode pointed out my plan said policy v3 is blocked, but my own sunset rule s
 
 **[5:25] No migrations, tables created on startup (mine)**
 SQLite plus create_all is enough for a 6 hour project. Alembic would only cost time.
+
+**[5:40] Host Python is 3.15, Docker is 3.12 (mine)**
+opencode found my laptop actually has Python 3.15.1. Tests run locally on 3.15 and the app runs on 3.12 in Docker. SQLAlchemy had to be 2.0.58 because 2.0.40 crashes on 3.15.
+
+
+**[5:45] PO replied to questions 1 to 11 (PO)**
+Confirmed: compare with the last published version. Left to me: block/warn workflow, overrides, x-internal and x-sunset meaning, sunset rule, enum and status code rules, path parameter rename. So all my defaults from 5:15 stay for those. Full answers are in docs/PLAN.md.
+
+**[5:45] Version numbers only move forward on a successful publish (PO + mine)**
+The PO said the version is bumped only on a successful publish with 0 errors for dependents. I read that as: a number belongs to the service only once it is published, so rejected and blocked numbers can be reused (claims 1.1.0 case), and a new upload must have a higher semver than the last published one, otherwise it is rejected. Breaking change with only a minor bump stays a warning. All the kit versions go up, so none of them get rejected because of this.
+
+**[5:45] Stale consumer references are errors, not warnings (PO + mine)**
+The PO said a reference that no longer matches is "an error to the previous deployed version". So I show it as an error on the consumer and name the published version it stopped matching (for example payments-svc reading legacyCode after policy 2.0.0). It does not block new publishes, because the damage is already live and the provider can't undo it by being blocked. Changed from my 5:15 default (warning).
+
+**[5:45] Question 12 was never sent, notifications are my call (mine)**
+I forgot to include it in the email. Going with webhooks to the provider team and the affected consumer teams, and a CI check endpoint after that if there is time.

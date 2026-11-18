@@ -49,7 +49,8 @@ kit/           the starter kit, READ ONLY
 - Direction matters. Request changes are matched against what a consumer "sends", response changes against what it "reads". In a request, making things stricter is breaking (new required field, enum value removed, optional to required). In a response, taking things away is breaking (field removed, required to optional, type changed).
 - A change to a parent path affects all its children. Removing premium.breakdown affects a consumer that reads premium.breakdown[].amount.
 - Operations or fields marked x-internal never block a publish. x-sunset is a deprecation date (exact rules are in DECISIONS.md).
-- Consumer files can be out of date. A consumer reference that doesn't match the spec is a "stale reference" warning. It must never crash anything.
+- Consumer files can be out of date. A consumer reference that doesn't match the current published spec is a "stale reference" ERROR on that consumer, saying which published version it stopped matching. It must never crash anything, and it does not block new publishes.
+- A version number is only taken once it is published. A new upload must have a higher version (semver compare) than the last published one of that service, otherwise it is rejected. Rejected or blocked numbers can be reused.
 - Every change must have a severity (breaking, warning, safe) and a short reason in plain English.
 
 ## Style

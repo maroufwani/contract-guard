@@ -11,24 +11,24 @@ Contract Guard is a registry where every team uploads each new version of their 
 
 ## Questions I asked the PO
 
-For each one I wrote what I will assume if the answer is "your call".
+I sent questions 1 to 11 by email at 5:11 PM and got the reply at 5:41 PM. The PO answered some of them directly and left the rest to me ("direction of your product is upon you"), so for those I went with my default. I forgot to send question 12, so that one is also my call.
 
-1. If a breaking change doesn't hit any registered consumer, should it block or only warn? Answer: [to fill]. My default: warn, because consumer files can be incomplete but blocking everything is annoying.
-2. Can a block be overridden, by whom, and is it recorded? Answer: [to fill]. My default: the provider owner can override with a written reason, and it goes into the history.
-3. Do we compare against the last published version or the last attempted one? Answer: [to fill]. My default: last published. A blocked version never existed for consumers.
-4. What do x-internal and x-sunset mean? Answer: [to fill]. My default: x-internal means only the owning team calls it, so changes there never block. x-sunset is the date after which a deprecated field can be removed.
-5. Is removing a field allowed after its sunset date, before it, or both? Answer: [to fill]. My default: after sunset it is only a warning, before sunset it is breaking.
-6. Is a new enum value in a response breaking? Answer: [to fill]. My default: warning, since a strict client might crash on an unknown value.
-7. Is a new response status code breaking? Answer: [to fill]. My default: warning.
-8. Is renaming a path parameter (/quotes/{id} to /quotes/{quoteId}) a change? Answer: [to fill]. My default: no, the URL that clients call is the same.
-9. Should we enforce semver (breaking change must bump major)? Answer: [to fill]. My default: warn on mismatch, don't block.
-10. Can a rejected version number be reused? Answer: [to fill]. My default: yes, only published numbers are taken.
-11. How do we treat consumer references that no longer match the spec? Answer: [to fill]. My default: show them as warnings ("stale reference"), never crash.
-12. Which going-further item matters most, and who should be notified? Answer: [to fill]. My default: webhook notifications to the provider team and the affected consumer teams.
+1. If a breaking change doesn't hit any registered consumer, should it block or only warn? PO: my call. I'm going with warn, because consumer files can be incomplete but blocking everything is annoying. This also fits the PO's answer to Q9, which talks about "0 errors in dependency", so what matters is whether a dependent breaks.
+2. Can a block be overridden, by whom, and is it recorded? PO: my call. The provider owner can override with a written reason, and it goes into the history.
+3. Do we compare against the last published version or the last attempted one? PO: last published version. A blocked version never existed for consumers.
+4. What do x-internal and x-sunset mean? PO: "something you have to figure out". My reading: x-internal means only the owning team calls it, so changes there never block. x-sunset is the date after which a deprecated field can be removed.
+5. Is removing a field allowed after its sunset date, before it, or both? PO: my call. After sunset it is only a warning, before sunset it is breaking.
+6. Is a new enum value in a response breaking? PO: my call. Warning, since a strict client might crash on an unknown value.
+7. Is a new response status code breaking? PO: my call. Warning.
+8. Is renaming a path parameter (/quotes/{id} to /quotes/{quoteId}) a change? PO: my call. No, the URL that clients call is the same.
+9. Should we enforce semver (breaking change must bump major)? PO: the version number only moves forward on a successful publish with 0 errors for dependents. So my reading is that a version number belongs to a service only once it is published, and a new upload must have a higher version than the last published one, otherwise it is rejected. A breaking change released as only a minor bump is still just a warning.
+10. Can a rejected version number be reused? PO: covered by the answer to Q9. Yes, because a rejected or blocked version never took the number.
+11. How do we treat consumer references that no longer match the spec? PO: it is an error against the previous deployed version. So I show it as an error (not a warning) on the consumer, and say which published version it stopped matching. It never crashes anything, and it does not block new publishes, because that damage is already live and blocking would freeze the provider team for something they can't undo.
+12. Which going-further item matters most, and who should be notified? Not asked, so my call. Webhook notifications to the provider team and the affected consumer teams.
 
 ## What I found in the kit
 
-I went through all 12 spec versions and the 4 consumer files by hand, and these became my acceptance tests. Quote v2 only reorganises components and renames {id} to {quoteId}, so it should publish clean. Quote v3 removes premium.breakdown[].amount (mobile-app reads it) and should be blocked. Quote v4 only adds optional fields. Policy v2 deprecates legacyCode and holder.phone with sunset dates, so only warnings. Policy v3 removes both, and payments-svc still reads legacyCode, so blocked. Policy v4 adds a required request field and removes VEHICLE from a request enum, which breaks partner-portal, and it is only a minor version bump. Claims v2 has a typo in a $ref (ClaimDocumnt) so it must be rejected as invalid. Claims v3 fixes it and reuses the number 1.1.0. Claims v4 makes amountApproved optional in the response, which breaks mobile-app.
+I went through all 12 spec versions and the 4 consumer files by hand, and these became my acceptance tests. Quote v2 only reorganises components and renames {id} to {quoteId}, so it should publish clean. Quote v3 removes premium.breakdown[].amount (mobile-app reads it) and should be blocked. Quote v4 only adds optional fields. Policy v2 deprecates legacyCode and holder.phone with sunset dates, so only warnings. Policy v3 removes both. legacyCode was past its sunset date so that is only a warning, and holder.phone is removed before its sunset, which is breaking, but nobody reads it, so it also only warns. So v3 publishes with warnings, and payments-svc then shows an error because it still reads legacyCode. Policy v4 adds a required request field and removes VEHICLE from a request enum, which breaks partner-portal, and it is only a minor version bump. Claims v2 has a typo in a $ref (ClaimDocumnt) so it must be rejected as invalid. Claims v3 fixes it and reuses the number 1.1.0. Claims v4 makes amountApproved optional in the response, which breaks mobile-app.
 
 Some consumer files are stale. mobile-app and notifications-svc still call GET /quotes/{id}, so I have to match path parameters by position and not by name. One open question for me: if quote v3 is blocked and the team then uploads v4, v4 is compared with v2, so it still carries the removal from v3 and should also be blocked. I think that is the correct behaviour.
 
